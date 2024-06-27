@@ -152,8 +152,6 @@ Future<List<Customer>> fetchCustomers(http.Client client) async {
     },
   );
 
-  debugPrint("log: $token");
-
   if (response.statusCode == 200) {
     return compute(parseCustomers, response.body);
   } else {
@@ -205,54 +203,86 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
   }
 
   Future<void> _addCustomer() async {
-    // フォームのデータを使用して新しいCustomerオブジェクトを作成する
-    final newCustomer = Customer(
-      isComplete: _isComplete, // Customerが完了しているかどうか
-      title: _titleController.text, // Customerのタイトル
-      time: _timeController.text, // Customerに関連する時刻
-    );
+    if (_formKey.currentState!.validate()) {
+      try {
+        final newCustomer = Customer(
+          isComplete: _isComplete,
+          title: _titleController.text,
+          time: _timeController.text,
+        );
 
-    // APIリクエストのパラメータを定義する
-    const param = {"app": '16'};
-    // APIエンドポイントのURIを構築する
-    final uri =
-        Uri.https('kvt9cht6gak2.cybozu.com', '/k/v1/record.json', param);
+        //
+        //ここから変更点
+        //
+        String? token = await SecureStorage().readSecureData('kintoneAPI');
+        if (token == null) {
+          throw Exception('API token is null');
+        }
 
-    // セキュアストレージからAPIトークンを読み取る
-    final token = await SecureStorage().readSecureData('kintoneAPI');
+        // kintoneのアプリIDを設定する（例として16を使用）
+        String appId = '16';
 
-    // トークンがnullの場合、例外を投げる
-    if (token == null) {
-      throw Exception('API token is null');
-    }
+        // リクエストボディを定義する
+        Map<String, dynamic> body = {
+          'app': appId,
+          'record': {
+            '完了': {
+              'value': newCustomer.isComplete ? ['完了'] : []
+            },
+            'タイトル': {'value': newCustomer.title},
+            '時刻': {'value': newCustomer.time},
+          }
+        };
 
-    // APIリクエストを送信する
-    final response = await http.post(
-      uri,
-      headers: {
-        'X-Cybozu-API-Token': token, // APIトークンをヘッダーに設定
-        'Content-Type': 'application/json', // コンテンツタイプをJSONに設定
-      },
-      body: jsonEncode({
-        'record': {
-          '完了': {'value': newCustomer.isComplete ? '完了' : '未完了'}, // 完了ステータス
-          'タイトル': {'value': newCustomer.title}, // タイトル
-          '時刻': {'value': newCustomer.time}, // 時刻
-        },
-      }),
-    );
+        // kintone APIのエンドポイントを構築する
+        String url =
+            'https://kvt9cht6gak2.cybozu.com/k/v1/record.json'; // 実際のkintoneのURLに置き換える
 
-    // リクエストが成功した場合、前の画面に戻る
-    if (response.statusCode == 200) {
-      Navigator.pop(context, newCustomer);
-    } else {
-      // 失敗した場合、例外を投げる
-      throw Exception(
-          'Failed to add customer: ${response.statusCode} - ${response.reasonPhrase}');
+        // HTTP POSTリクエストを送信する
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'X-Cybozu-API-Token': token,
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        );
+
+        debugPrint("debugPrint : " +
+            newCustomer.title.runtimeType.toString() +
+            newCustomer.time.runtimeType.toString() +
+            newCustomer.isComplete.runtimeType.toString());
+
+        if (response.statusCode == 200) {
+          Navigator.pop(context, newCustomer);
+        } else {
+          final errorResponse = jsonDecode(response.body);
+          final errorMessage = errorResponse['message'] ?? 'Unknown error';
+          throw Exception(
+              'Failed to add customer: ${response.statusCode} - $errorMessage');
+        }
+      } catch (e) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('エラー'),
+            content: Text('顧客の追加に失敗しました。エラー: $e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
-//追加ボタン
+  //
+  //ここまで変更点
+  //
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -299,11 +329,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
                 ],
               ),
               ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _addCustomer();
-                  }
-                },
+                onPressed: _addCustomer,
                 child: const Text('追加'),
               ),
             ],
