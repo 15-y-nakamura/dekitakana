@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/foundation.dart'; // low-level Utilityクラスのライブラリ
 import 'package:flutter/material.dart'; // Material Designのウィジェットのライブラリ
 
@@ -8,6 +7,8 @@ import 'dart:convert'; // JSONデータの変換用ライブラリ
 
 import 'package:http/http.dart' as http; // Http Request用のライブラリ
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure Storage用のライブラリ
+import 'add.dart';
+import 'delete.dart'; // ここでdelete.dartをインポートします
 
 void main() {
   runApp(const MyApp());
@@ -57,12 +58,58 @@ class MyHomePage extends StatelessWidget {
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/addCustomer');
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // 追加ボタン
+          Container(
+            width: 70,
+            height: 70,
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/addCustomer');
+              },
+              child: const Icon(Icons.add, size: 30),
+            ),
+          ),
+          const SizedBox(height: 16), // ボタン間のスペース
+
+          // 削除ボタン
+          Container(
+            width: 70,
+            height: 70,
+            child: FloatingActionButton(
+              onPressed: () async {
+                print('削除ボタンが押されました。');
+                await fetchAllRecords(); // fetchAllRecordsを呼び出す
+              },
+              child: const Icon(Icons.delete, size: 30),
+            ),
+          ),
+          const SizedBox(height: 16), // ボタン間のスペース
+
+          // 更新ボタン
+          Container(
+            width: 70,
+            height: 70,
+            child: FloatingActionButton(
+              onPressed: () {
+                // 更新ボタンが押された時の処理
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) =>
+                        MyHomePage(title: 'がんばればできる'),
+                  ),
+                );
+              },
+              child: const Icon(Icons.refresh, size: 30),
+            ),
+          ),
+        ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -179,163 +226,5 @@ class SecureStorage {
 
   Future<void> deleteSecureData(String key) async {
     await storage.delete(key: key);
-  }
-}
-
-class AddCustomerPage extends StatefulWidget {
-  const AddCustomerPage({Key? key}) : super(key: key);
-
-  @override
-  _AddCustomerPageState createState() => _AddCustomerPageState();
-}
-
-class _AddCustomerPageState extends State<AddCustomerPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  bool _isComplete = false;
-  final _timeController = TextEditingController();
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _timeController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _addCustomer() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        final newCustomer = Customer(
-          isComplete: _isComplete,
-          title: _titleController.text,
-          time: _timeController.text,
-        );
-
-        //
-        //ここから変更点
-        //
-        String? token = await SecureStorage().readSecureData('kintoneAPI');
-        if (token == null) {
-          throw Exception('API token is null');
-        }
-
-        // kintoneのアプリIDを設定する（例として16を使用）
-        String appId = '16';
-
-        // リクエストボディを定義する
-        Map<String, dynamic> body = {
-          'app': appId,
-          'record': {
-            '完了': {
-              'value': newCustomer.isComplete ? ['完了'] : []
-            },
-            'タイトル': {'value': newCustomer.title},
-            '時刻': {'value': newCustomer.time},
-          }
-        };
-
-        // kintone APIのエンドポイントを構築する
-        String url =
-            'https://kvt9cht6gak2.cybozu.com/k/v1/record.json'; // 実際のkintoneのURLに置き換える
-
-        // HTTP POSTリクエストを送信する
-        final response = await http.post(
-          Uri.parse(url),
-          headers: {
-            'X-Cybozu-API-Token': token,
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(body),
-        );
-
-        debugPrint("debugPrint : " +
-            newCustomer.title.runtimeType.toString() +
-            newCustomer.time.runtimeType.toString() +
-            newCustomer.isComplete.runtimeType.toString());
-
-        if (response.statusCode == 200) {
-          Navigator.pop(context, newCustomer);
-        } else {
-          final errorResponse = jsonDecode(response.body);
-          final errorMessage = errorResponse['message'] ?? 'Unknown error';
-          throw Exception(
-              'Failed to add customer: ${response.statusCode} - $errorMessage');
-        }
-      } catch (e) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('エラー'),
-            content: Text('顧客の追加に失敗しました。エラー: $e'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('閉じる'),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-  }
-
-  //
-  //ここまで変更点
-  //
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('追加'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'タイトル'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'タイトルを入力してください';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _timeController,
-                decoration: const InputDecoration(labelText: '時刻'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '時刻を入力してください';
-                  }
-                  return null;
-                },
-              ),
-              Row(
-                children: [
-                  const Text('完了: '),
-                  Checkbox(
-                    value: _isComplete,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _isComplete = value ?? false;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: _addCustomer,
-                child: const Text('追加'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
