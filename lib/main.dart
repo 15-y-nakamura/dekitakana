@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http; // Http Request用のライブラリ
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure Storage用のライブラリ
 import 'add.dart';
 import 'delete.dart'; // ここでdelete.dartをインポートします
+import 'time.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
       home: const MyHomePage(title: appTitle),
       routes: {
         '/addCustomer': (context) => const AddCustomerPage(),
+        '/time': (context) => TimePage(),
       },
     );
   }
@@ -42,21 +44,29 @@ class MyHomePage extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
       ),
-      body: FutureBuilder<List<Customer>>(
-        future: fetchCustomers(http.Client()),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('An error has occurred: ${snapshot.error}'),
-            );
-          } else if (snapshot.hasData) {
-            return CustomersList(customers: snapshot.data!);
-          } else {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-        },
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/background.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: FutureBuilder<List<Customer>>(
+          future: fetchCustomers(http.Client()),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('An error has occurred: ${snapshot.error}'),
+              );
+            } else if (snapshot.hasData) {
+              return CustomersList(customers: snapshot.data!);
+            } else {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+          },
+        ),
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -107,6 +117,20 @@ class MyHomePage extends StatelessWidget {
               child: const Icon(Icons.refresh, size: 30),
             ),
           ),
+
+          const SizedBox(height: 16), // ボタン間のスペース
+
+          // time.dartに遷移するボタン
+          Container(
+            width: 70,
+            height: 70,
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/time');
+              },
+              child: const Icon(Icons.access_time, size: 30),
+            ),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -149,6 +173,7 @@ class _CustomersListState extends State<CustomersList> {
                     ),
                   ],
                 ),
+                Text('日付: ${widget.customers[index].day}'),
                 Text('時刻: ${widget.customers[index].time}'),
               ],
             ),
@@ -162,11 +187,13 @@ class _CustomersListState extends State<CustomersList> {
 class Customer {
   bool isComplete;
   final String title;
+  final String day;
   final String time;
 
   Customer({
     required this.isComplete,
     required this.title,
+    required this.day,
     required this.time,
   });
 
@@ -174,6 +201,7 @@ class Customer {
     return Customer(
       isComplete: json['完了']['value'].isNotEmpty,
       title: json['タイトル']['value'],
+      day: json['日付']['value'],
       time: json['時刻']['value'],
     );
   }

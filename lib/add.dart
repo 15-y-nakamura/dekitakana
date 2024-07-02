@@ -14,11 +14,13 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   bool _isComplete = false;
+  final _dayController = TextEditingController();
   final _timeController = TextEditingController();
 
   @override
   void dispose() {
     _titleController.dispose();
+    _dayController.dispose();
     _timeController.dispose();
     super.dispose();
   }
@@ -29,6 +31,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
         final newCustomer = Customer(
           isComplete: _isComplete,
           title: _titleController.text,
+          day: _dayController.text,
           time: _timeController.text,
         );
 
@@ -49,6 +52,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
               'value': newCustomer.isComplete ? ['完了'] : []
             },
             'タイトル': {'value': newCustomer.title},
+            '日付': {'value': newCustomer.day},
             '時刻': {'value': newCustomer.time},
           }
         };
@@ -111,6 +115,16 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
                 },
               ),
               TextFormField(
+                controller: _dayController,
+                decoration: const InputDecoration(labelText: '日付'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '日付を入力してください';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
                 controller: _timeController,
                 decoration: const InputDecoration(labelText: '時刻'),
                 validator: (value) {
@@ -148,11 +162,13 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
 class Customer {
   bool isComplete;
   final String title;
+  final String day;
   final String time;
 
   Customer({
     required this.isComplete,
     required this.title,
+    required this.day,
     required this.time,
   });
 }
