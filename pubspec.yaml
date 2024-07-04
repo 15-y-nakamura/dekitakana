@@ -38,6 +38,10 @@ dependencies:
   http: ^1.2.1
   flutter_secure_storage: ^9.2.2
   intl: ^0.17.0
+  flutter_blue:
+  get:
+  permission_handler:
+  flutter_blue_plus: ^1.16.2
 
 dev_dependencies:
   flutter_test:
