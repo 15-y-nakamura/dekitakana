@@ -1,16 +1,16 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'main.dart'; // Import the main.dart to access MyHomePage
 
-Future<void> fetchAllRecords() async {
+Future<void> fetchAllRecords(BuildContext context) async {
   final String apiUrl = 'https://kvt9cht6gak2.cybozu.com/k/v1/records.json';
-  final String apiToken =
-      'eacrQLrVRaSeFYkafsZr2NjthyqnyGZGAFBEHW3n'; // あなたのAPIトークンを設定する
+  final String apiToken = 'eacrQLrVRaSeFYkafsZr2NjthyqnyGZGAFBEHW3n';
 
   final Map<String, String> headers = {
     'X-Cybozu-API-Token': apiToken,
   };
 
-  // GETリクエストのURL構築
   final String url = '$apiUrl?app=16';
 
   final http.Response response = await http.get(
@@ -21,9 +21,7 @@ Future<void> fetchAllRecords() async {
   if (response.statusCode == 200) {
     final Map<String, dynamic> data = json.decode(response.body);
 
-    List<dynamic> records = data['records']; // レコードのリストを取得
-
-    //レコードごとに処理する例を示すためのコメントアウト
+    List<dynamic> records = data['records'];
     List<int> formattedRecords = [];
     for (var record in records) {
       if (record['完了']['value'].contains('完了')) {
@@ -35,23 +33,21 @@ Future<void> fetchAllRecords() async {
     }
 
     print(formattedRecords);
-    // 実際に使う場合は formattedRecords を返したり他の処理に渡したりする
 
-    await deleteRecords(formattedRecords, apiToken);
+    showDeleteConfirmationDialog(context, formattedRecords, apiToken);
   } else {
     print('Failed to fetch records. Status code: ${response.statusCode}');
     print('Response body: ${response.body}');
   }
 }
 
-Future<void> deleteRecords(List<int> recordIds, String apiToken) async {
+Future<void> deleteRecords(
+    BuildContext context, List<int> recordIds, String apiToken) async {
   String apiUrl = 'https://kvt9cht6gak2.cybozu.com/k/v1/records.json';
 
-  print(recordIds);
-
   Map<String, dynamic> body = {
-    "app": 16, // 実際のアプリIDに置き換えてください
-    "ids": recordIds, // 削除したいレコードIDのリスト
+    "app": 16,
+    "ids": recordIds,
   };
 
   Map<String, String> headers = {
@@ -67,16 +63,65 @@ Future<void> deleteRecords(List<int> recordIds, String apiToken) async {
     );
 
     if (response.statusCode == 200) {
-      print('レコードを削除しました。');
+      showMessageDialog(context, 'レコードを削除しました。');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => MyHomePage(title: 'がんばればできる'),
+        ),
+      );
     } else {
-      print('リクエストが失敗しました。ステータスコード: ${response.statusCode}');
-      print('レスポンスボディ: ${response.body}');
+      showMessageDialog(
+          context, 'リクエストが失敗しました。ステータスコード: ${response.statusCode}');
     }
   } catch (e) {
-    print('レコードの削除中にエラーが発生しました: $e');
+    showMessageDialog(context, 'レコードの削除中にエラーが発生しました: $e');
   }
 }
 
-void main() {
-  fetchAllRecords();
+void showMessageDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: Text('OK'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void showDeleteConfirmationDialog(
+    BuildContext context, List<int> recordIds, String apiToken) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('確認'),
+        content: Text('本当に削除してもよろしいですか？'),
+        actions: [
+          TextButton(
+            child: Text('キャンセル'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: Text('削除'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              deleteRecords(context, recordIds, apiToken);
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
