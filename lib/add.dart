@@ -13,7 +13,6 @@ class AddCustomerPage extends StatefulWidget {
 class _AddCustomerPageState extends State<AddCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  bool _isComplete = false;
   final _dayController = TextEditingController();
   final _timeController = TextEditingController();
 
@@ -29,7 +28,8 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
     if (_formKey.currentState!.validate()) {
       try {
         final newCustomer = Customer(
-          isComplete: _isComplete,
+          recordNumber: 0, // ダミーのレコード番号、実際にはkintoneから取得される
+          isComplete: false, // 初期状態で完了はfalse
           title: _titleController.text,
           day: _dayController.text,
           time: _timeController.text,
@@ -49,7 +49,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
           'app': appId,
           'record': {
             '完了': {
-              'value': newCustomer.isComplete ? ['完了'] : []
+              'value': [] // デフォルトで空のリストを送信
             },
             'タイトル': {'value': newCustomer.title},
             '日付': {'value': newCustomer.day},
@@ -67,19 +67,33 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
         );
 
         if (response.statusCode == 200) {
-          Navigator.pop(context, newCustomer);
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('成功'),
+              content: Text('追加されました。'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.pop(context, newCustomer);
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+          );
         } else {
           final errorResponse = jsonDecode(response.body);
           final errorMessage = errorResponse['message'] ?? 'Unknown error';
-          throw Exception(
-              '顧客の追加に失敗しました: ${response.statusCode} - $errorMessage');
+          throw Exception('追加に失敗しました: ${response.statusCode} - $errorMessage');
         }
       } catch (e) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: Text('エラー'),
-            content: Text('顧客の追加に失敗しました。エラー: $e'),
+            content: Text('追加に失敗しました。エラー: $e'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -106,7 +120,9 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
             children: [
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'タイトル'),
+                decoration: const InputDecoration(
+                  labelText: 'タイトル',
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'タイトルを入力してください';
@@ -116,7 +132,10 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
               ),
               TextFormField(
                 controller: _dayController,
-                decoration: const InputDecoration(labelText: '日付'),
+                decoration: const InputDecoration(
+                  labelText: '日付',
+                  hintText: 'YYYY-MM-DD', // 日付フィールドのステークホルダー
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '日付を入力してください';
@@ -126,26 +145,16 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
               ),
               TextFormField(
                 controller: _timeController,
-                decoration: const InputDecoration(labelText: '時刻'),
+                decoration: const InputDecoration(
+                  labelText: '時刻',
+                  hintText: 'HH:MM', // 時刻フィールドのステークホルダー
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '時刻を入力してください';
                   }
                   return null;
                 },
-              ),
-              Row(
-                children: [
-                  const Text('完了: '),
-                  Checkbox(
-                    value: _isComplete,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _isComplete = value ?? false;
-                      });
-                    },
-                  ),
-                ],
               ),
               ElevatedButton(
                 onPressed: _addCustomer,
@@ -160,12 +169,14 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
 }
 
 class Customer {
+  final int recordNumber;
   bool isComplete;
   final String title;
   final String day;
   final String time;
 
   Customer({
+    required this.recordNumber,
     required this.isComplete,
     required this.title,
     required this.day,
