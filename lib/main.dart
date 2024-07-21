@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'add.dart';
 import 'ble_home.dart';
 import 'delete.dart';
+import 'calendar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/addCustomer': (context) => const AddCustomerPage(),
         '/bleHome': (context) => const BleHomePage(),
+        '/calendar': (context) => const CalendarPage(),
       },
     );
   }
