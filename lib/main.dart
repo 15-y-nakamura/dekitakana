@@ -132,6 +132,13 @@ class MyHomePage extends StatelessWidget {
             },
             child: const Icon(Icons.bluetooth, size: 30),
           ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/calendar');
+            },
+            child: const Icon(Icons.calendar_today, size: 30),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
