@@ -7,8 +7,8 @@ flutterで作成したモバイルアプリからやることと期限を設定�
 モバイルアプリからkintone APIをたたくので、httpリクエストを実行するためのパッケージhttpをインストールします。
 VSCodeのコマンドラインで以下のコマンドを実行します。
 
-flutter pub add http
+`flutter pub add http`
 
 また、kintoneのAPIトークンを秘匿するためのライブラリ「flutter_secure_storage」もインストールします。
 
-flutter pub add flutter_secure_storage
+`flutter pub add flutter_secure_storage`
