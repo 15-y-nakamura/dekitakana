@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dekitakana/add.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -28,7 +29,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Future<void> fetchKintoneData() async {
-    final List<Customer> customers = await fetchCustomers(http.Client());
+    final List<Task> customers = await fetchCustomers(http.Client());
 
     setState(() {
       _events = {};
@@ -130,16 +131,16 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 }
 
-// Customerクラスとデータ取得関数を含む部分
+// Taskクラスとデータ取得関数を含む部分
 
-class Customer {
+class Task {
   final int recordNumber;
   bool isComplete;
   final String title;
   final String day;
   final String time;
 
-  Customer({
+  Task({
     required this.recordNumber,
     required this.isComplete,
     required this.title,
@@ -147,8 +148,8 @@ class Customer {
     required this.time,
   });
 
-  factory Customer.fromJson(Map<String, dynamic> json) {
-    return Customer(
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
       recordNumber: int.parse(json['レコード番号']['value']),
       isComplete: json['完了']['value'].isNotEmpty,
       title: json['タイトル']['value'],
@@ -158,7 +159,7 @@ class Customer {
   }
 }
 
-Future<List<Customer>> fetchCustomers(http.Client client) async {
+Future<List<Task>> fetchCustomers(http.Client client) async {
   const param = {"app": '16'};
   final uri = Uri.https('kvt9cht6gak2.cybozu.com', '/k/v1/records.json', param);
 
@@ -186,10 +187,10 @@ Future<List<Customer>> fetchCustomers(http.Client client) async {
   }
 }
 
-List<Customer> parseCustomers(String responseBody) {
+List<Task> parseCustomers(String responseBody) {
   final parsed =
       jsonDecode(responseBody)['records'].cast<Map<String, dynamic>>();
-  return parsed.map<Customer>((json) => Customer.fromJson(json)).toList();
+  return parsed.map<Task>((json) => Task.fromJson(json)).toList();
 }
 
 // SecureStorageクラス
