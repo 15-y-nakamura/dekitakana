@@ -3,14 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
-class AddCustomerPage extends StatefulWidget {
-  const AddCustomerPage({Key? key}) : super(key: key);
+class AddTaskPage extends StatefulWidget {
+  const AddTaskPage({Key? key}) : super(key: key);
 
   @override
-  _AddCustomerPageState createState() => _AddCustomerPageState();
+  _AddTaskPageState createState() => _AddTaskPageState();
 }
 
-class _AddCustomerPageState extends State<AddCustomerPage> {
+class _AddTaskPageState extends State<AddTaskPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _dayController = TextEditingController();
@@ -27,7 +27,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
   Future<void> _addCustomer() async {
     if (_formKey.currentState!.validate()) {
       try {
-        final newCustomer = Customer(
+        final newTask = Task(
           recordNumber: 0, // ダミーのレコード番号、実際にはkintoneから取得される
           isComplete: false, // 初期状態で完了はfalse
           title: _titleController.text,
@@ -51,9 +51,9 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
             '完了': {
               'value': [] // デフォルトで空のリストを送信
             },
-            'タイトル': {'value': newCustomer.title},
-            '日付': {'value': newCustomer.day},
-            '時刻': {'value': newCustomer.time},
+            'タイトル': {'value': newTask.title},
+            '日付': {'value': newTask.day},
+            '時刻': {'value': newTask.time},
           }
         };
 
@@ -76,7 +76,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    Navigator.pop(context, newCustomer);
+                    Navigator.pop(context, newTask);
                   },
                   child: Text('OK'),
                 ),
@@ -168,14 +168,14 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
   }
 }
 
-class Customer {
+class Task {
   final int recordNumber;
   bool isComplete;
   final String title;
   final String day;
   final String time;
 
-  Customer({
+  Task({
     required this.recordNumber,
     required this.isComplete,
     required this.title,

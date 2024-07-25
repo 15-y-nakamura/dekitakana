@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const MyHomePage(title: appTitle),
       routes: {
-        '/addCustomer': (context) => const AddCustomerPage(),
+        '/addTask': (context) => const AddTaskPage(),
         '/bleHome': (context) => const BleHomePage(),
         '/calendar': (context) => const CalendarPage(),
       },
@@ -59,7 +59,7 @@ class MyHomePage extends StatelessWidget {
               ),
             ),
           ),
-          FutureBuilder<List<Customer>>(
+          FutureBuilder<List<Task>>(
             future: fetchCustomers(http.Client()),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
@@ -88,8 +88,8 @@ class MyHomePage extends StatelessWidget {
           FloatingActionButton(
             onPressed: () async {
               final newCustomer =
-                  await Navigator.pushNamed(context, '/addCustomer');
-              if (newCustomer != null && newCustomer is Customer) {
+                  await Navigator.pushNamed(context, '/addTask');
+              if (newCustomer != null && newCustomer is Task) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('追加しました: ${newCustomer.title}')),
                 );
@@ -147,7 +147,7 @@ class MyHomePage extends StatelessWidget {
 }
 
 class CustomersList extends StatefulWidget {
-  final List<Customer> customers;
+  final List<Task> customers;
 
   const CustomersList({Key? key, required this.customers}) : super(key: key);
 
@@ -156,8 +156,7 @@ class CustomersList extends StatefulWidget {
 }
 
 class _CustomersListState extends State<CustomersList> {
-  Future<void> _updateCompletionStatus(
-      Customer customer, bool isComplete) async {
+  Future<void> _updateCompletionStatus(Task task, bool isComplete) async {
     final secureStorage = FlutterSecureStorage();
     final token = await secureStorage.read(key: 'kintoneAPI');
     if (token == null) {
@@ -169,7 +168,7 @@ class _CustomersListState extends State<CustomersList> {
 
     final body = {
       'app': appId,
-      'id': customer.recordNumber,
+      'id': task.recordNumber,
       'record': {
         '完了': {
           'value': isComplete ? ['完了'] : []
@@ -231,14 +230,14 @@ class _CustomersListState extends State<CustomersList> {
   }
 }
 
-class Customer {
+class Task {
   final int recordNumber;
   bool isComplete;
   final String title;
   final String day;
   final String time;
 
-  Customer({
+  Task({
     required this.recordNumber,
     required this.isComplete,
     required this.title,
@@ -246,8 +245,8 @@ class Customer {
     required this.time,
   });
 
-  factory Customer.fromJson(Map<String, dynamic> json) {
-    return Customer(
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
       recordNumber: int.parse(json['レコード番号']['value']),
       isComplete: json['完了']['value'].isNotEmpty,
       title: json['タイトル']['value'],
@@ -257,7 +256,7 @@ class Customer {
   }
 }
 
-Future<List<Customer>> fetchCustomers(http.Client client) async {
+Future<List<Task>> fetchCustomers(http.Client client) async {
   const param = {"app": '16'};
   final uri = Uri.https('kvt9cht6gak2.cybozu.com', '/k/v1/records.json', param);
 
@@ -285,10 +284,10 @@ Future<List<Customer>> fetchCustomers(http.Client client) async {
   }
 }
 
-List<Customer> parseCustomers(String responseBody) {
+List<Task> parseCustomers(String responseBody) {
   final parsed =
       jsonDecode(responseBody)['records'].cast<Map<String, dynamic>>();
-  return parsed.map<Customer>((json) => Customer.fromJson(json)).toList();
+  return parsed.map<Task>((json) => Task.fromJson(json)).toList();
 }
 
 class SecureStorage {
